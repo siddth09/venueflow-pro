@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('Building static output to /dist...');
-const distDir = path.join(__dirname, 'dist');
+console.log('Building static output to /public...');
+const distDir = path.join(__dirname, 'public');
 if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir);
 }
