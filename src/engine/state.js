@@ -4,7 +4,7 @@
  * Pattern: Observable Store (similar to Redux/Zustand without framework dependency)
  */
 
-import mockData from '../data/mockData.json' assert { type: 'json' };
+import mockData from '../data/mockData.js';
 
 class StateEngine {
   constructor() {

@@ -4,7 +4,7 @@
  * All DOM rendering via textContent / createElement — XSS-compliant.
  */
 
-import mockData from '../data/mockData.json' assert { type: 'json' };
+import mockData from '../data/mockData.js';
 
 const ORDER_STAGES = ['received', 'preparing', 'on_the_way', 'delivered'];
 const STAGE_LABELS  = { received: 'Order Received', preparing: 'Preparing', on_the_way: 'On the Way 🛵', delivered: 'Delivered! 🎉' };

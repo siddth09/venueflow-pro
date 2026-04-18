@@ -1,4 +1,4 @@
-{
+export default {
   "event": {
     "id": "evt_001",
     "name": "Mumbai Indians vs Chennai Super Kings",
@@ -84,4 +84,4 @@
     { "id": "st3", "name": "Amit Sharma", "role": "Medical",         "zone": "vip",   "status": "standby" },
     { "id": "st4", "name": "Neha Rao",    "role": "Security",        "zone": "south", "status": "active" }
   ]
-}
+};
