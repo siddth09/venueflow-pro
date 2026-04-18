@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="VenueFlow Pro — Your AI-powered stadium companion. Real-time crowd navigation, wait times, in-seat food ordering, and smart recommendations for Wankhede Stadium." />
+  <meta name="theme-color" content="#0A0E1A" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Content Security Policy — unsafe-eval DISABLED, locked endpoints -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self';
+             script-src 'self' https://maps.googleapis.com https://generativelanguage.googleapis.com;
+             style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
+             font-src https://fonts.gstatic.com;
+             img-src * data:;
+             connect-src https://generativelanguage.googleapis.com https://maps.googleapis.com https://maps.gstatic.com https://firebaseio.com;
+             frame-src 'none';" />
+
+  <title>VenueFlow Pro — Stadium AI Companion</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏟️</text></svg>" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Structured data for SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "VenueFlow Pro",
+    "description": "AI-powered stadium companion with real-time crowd navigation and smart recommendations",
+    "applicationCategory": "SportApplication"
+  }
+  </script>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+  ENTRY / CHECK-IN SCREEN
+════════════════════════════════════════════════════════════════════════ -->
+<div id="entry-screen" class="entry-screen" role="main" aria-label="Stadium check-in">
+  <div class="entry-logo" aria-hidden="true">🏟️</div>
+  <h1 class="entry-title">VenueFlow Pro</h1>
+  <p class="entry-subtitle">Your AI Stadium Companion · Powered by Gemini</p>
+
+  <div class="entry-card" role="region" aria-label="Match information and check-in">
+    <div class="entry-event-banner" aria-label="Today's match">
+      <span aria-hidden="true">🏏</span>
+      <div>
+        <div class="event-teams">MI vs CSK</div>
+        <div class="event-venue">Wankhede Stadium · Today</div>
+      </div>
+    </div>
+
+    <form id="seat-form" novalidate>
+      <label class="form-label" for="seat-input">Your Seat / Section</label>
+      <input
+        type="text"
+        id="seat-input"
+        class="form-input"
+        placeholder="e.g. North Stand, Row G, Seat 12"
+        autocomplete="off"
+        maxlength="40"
+        required
+        aria-required="true"
+        aria-describedby="seat-hint"
+      />
+      <small id="seat-hint" class="form-label" style="margin-bottom:16px;display:block;">Enter your section — we'll personalise your experience</small>
+      <button type="submit" class="btn-primary" id="entry-submit-btn">
+        🚀 Enter Stadium
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+  MAIN APP SHELL
+════════════════════════════════════════════════════════════════════════ -->
+<div id="main-app" class="app-shell hidden" role="application" aria-label="VenueFlow Stadium Companion">
+
+  <!-- ── Header ── -->
+  <header class="app-header" role="banner">
+    <div class="header-left">
+      <span class="header-logo" aria-hidden="true">🏟️</span>
+      <span class="header-title">VenueFlow</span>
+    </div>
+    <div class="header-right">
+      <span class="seat-chip" id="user-seat-label" aria-label="Your seat">—</span>
+      <button class="icon-btn" id="notif-bell" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+        🔔
+        <span class="notif-badge hidden" id="notif-badge" aria-label="Unread notifications"></span>
+      </button>
+      <button class="icon-btn" id="settings-btn" aria-label="Accessibility settings" aria-haspopup="true">
+        ♿
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Panel (hidden by default) -->
+  <div id="notif-panel" class="notif-panel hidden" role="dialog" aria-label="Notifications" aria-modal="false">
+    <p class="section-title">🔔 Notifications</p>
+    <div id="notif-list" role="list" aria-label="Notification list"></div>
+  </div>
+
+  <!-- Accessibility Settings Panel -->
+  <div id="settings-panel" class="notif-panel hidden" role="dialog" aria-label="Accessibility settings" aria-modal="false">
+    <p class="section-title">♿ Accessibility</p>
+    <div class="acc-toggle-row" style="margin-bottom:10px;">
+      <label class="acc-toggle-label" for="contrast-toggle">🎨 High Contrast Mode</label>
+      <label class="toggle" aria-label="Toggle high contrast mode">
+        <input type="checkbox" id="contrast-toggle" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="acc-toggle-row">
+      <label class="acc-toggle-label" for="accessibility-toggle">♿ Mobility Mode (Elevator Routes)</label>
+      <label class="toggle" aria-label="Toggle mobility-accessible routing">
+        <input type="checkbox" id="accessibility-toggle" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- ── Tab Navigation ── -->
+  <nav class="tab-nav" role="tablist" aria-label="Main navigation">
+    <button class="tab-btn" role="tab" data-tab="home" aria-selected="false" aria-controls="tab-home" id="tab-btn-home" tabindex="-1">
+      <span class="tab-icon" aria-hidden="true">🏠</span>
+      <span class="tab-label">Home</span>
+    </button>
+    <button class="tab-btn" role="tab" data-tab="map" aria-selected="false" aria-controls="tab-map" id="tab-btn-map" tabindex="-1">
+      <span class="tab-icon" aria-hidden="true">🗺️</span>
+      <span class="tab-label">Map</span>
+    </button>
+    <button class="tab-btn" role="tab" data-tab="chat" aria-selected="false" aria-controls="tab-chat" id="tab-btn-chat" tabindex="-1">
+      <span class="tab-icon" aria-hidden="true">🤖</span>
+      <span class="tab-label">AI Chat</span>
+    </button>
+    <button class="tab-btn" role="tab" data-tab="food" aria-selected="false" aria-controls="tab-food" id="tab-btn-food" tabindex="-1">
+      <span class="tab-icon" aria-hidden="true">🍔</span>
+      <span class="tab-label">Food</span>
+    </button>
+    <button class="tab-btn" role="tab" data-tab="navigate" aria-selected="false" aria-controls="tab-navigate" id="tab-btn-navigate" tabindex="-1">
+      <span class="tab-icon" aria-hidden="true">🧭</span>
+      <span class="tab-label">Navigate</span>
+    </button>
+  </nav>
+
+  <!-- ── Tab Panels ── -->
+  <main role="main" id="main-content">
+
+    <!-- ── HOME TAB ── -->
+    <section id="tab-home" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-home" tabindex="0">
+
+      <!-- Event Hero Card -->
+      <div class="event-hero glass-card" aria-live="polite">
+        <div class="event-name">MI vs CSK 🏏</div>
+        <div class="event-meta">Wankhede Stadium • Today</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span id="event-phase-badge" class="phase-badge phase-badge--blue" aria-live="polite" aria-atomic="true">⏰ Pre-Game</span>
+          <span id="kickoff-countdown" class="countdown" aria-live="polite" aria-atomic="true" aria-label="Kickoff countdown">Loading...</span>
+        </div>
+        <!-- Occupancy bar -->
+        <div style="margin-top:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;color:var(--text-muted);">Stadium Occupancy</span>
+            <span id="occupancy-pct" style="font-size:11px;font-weight:700;color:var(--text-secondary);">74%</span>
+          </div>
+          <div class="occupancy-bar-track" role="progressbar" aria-label="Stadium occupancy" aria-valuenow="74" aria-valuemin="0" aria-valuemax="100">
+            <div class="occupancy-bar-fill" id="occupancy-bar" style="width:74%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wait Time Cards Strip -->
+      <p class="section-title">⏱ Live Wait Times</p>
+      <div class="wait-cards-strip" id="wait-cards-container" role="list" aria-label="Live facility wait times">
+        <!-- Populated by main.js -->
+      </div>
+
+      <!-- Smart AI Recommendations -->
+      <p class="section-title">💡 Smart Recommendations</p>
+      <div id="smart-recs-container" role="list" aria-label="AI-powered venue recommendations" aria-live="polite">
+        <!-- Populated by main.js -->
+      </div>
+
+    </section>
+
+    <!-- ── MAP TAB ── -->
+    <section id="tab-map" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-map" tabindex="0">
+
+      <p class="section-title">🗺️ Crowd Heatmap</p>
+
+      <!-- SVG Stadium Heatmap -->
+      <div id="svg-heatmap-container" aria-label="Interactive stadium crowd density map" role="img">
+        <!-- Populated by MapController.js -->
+      </div>
+
+      <p class="section-title" style="margin-top:16px;">📋 All Wait Times</p>
+      <div class="wait-time-list" id="wait-time-list" role="list" aria-label="Full facility wait time list">
+        <!-- Populated by MapController.js -->
+      </div>
+
+      <!-- Google Maps Panel (shown when API key is available) -->
+      <div id="google-maps-container" style="height:250px;border-radius:var(--radius-lg);overflow:hidden;margin-top:16px;border:1px solid var(--border-glass);display:none;" aria-label="Google Maps navigation panel"></div>
+
+    </section>
+
+    <!-- ── CHAT TAB ── -->
+    <section id="tab-chat" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-chat" tabindex="0">
+      <!-- Screen reader live region -->
+      <div id="chat-live-region" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+      <div class="chat-container">
+        <!-- Suggested prompts -->
+        <div class="chat-chips" role="list" aria-label="Suggested questions">
+          <button class="chat-chip" role="listitem" data-prompt="Where's the nearest restroom?" aria-label="Ask about nearest restroom">🚻 Nearest restroom?</button>
+          <button class="chat-chip" role="listitem" data-prompt="I'm hungry, what's fastest?" aria-label="Ask about fastest food option">🍔 Fastest food?</button>
+          <button class="chat-chip" role="listitem" data-prompt="Which gate has shortest queue?" aria-label="Ask about shortest gate queue">🚪 Fastest gate?</button>
+          <button class="chat-chip" role="listitem" data-prompt="When should I head back to my seat?" aria-label="Ask when to return to seat">🪑 Go back now?</button>
+          <button class="chat-chip" role="listitem" data-prompt="Where is least crowded right now?" aria-label="Ask about least crowded area">🗺️ Quietest zone?</button>
+          <button class="chat-chip" role="listitem" data-prompt="Predict halftime crowd" aria-label="Ask about halftime crowd prediction">⚡ Halftime alert?</button>
+        </div>
+
+        <!-- Messages area -->
+        <div id="chat-messages" class="chat-messages" role="log" aria-label="Chat conversation" aria-live="polite">
+          <!-- Populated by AssistantController.js -->
+        </div>
+
+        <!-- Input bar -->
+        <div class="chat-input-bar">
+          <input
+            type="text"
+            id="chat-input"
+            class="chat-input"
+            placeholder="Ask me anything about the venue..."
+            aria-label="Chat message input"
+            autocomplete="off"
+            maxlength="300"
+          />
+          <button id="chat-send-btn" class="chat-send-btn" aria-label="Send message" title="Send">
+            ➤
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FOOD TAB ── -->
+    <section id="tab-food" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-food" tabindex="0">
+
+      <!-- Filters -->
+      <div class="food-filters" role="group" aria-label="Menu filters">
+        <button class="food-filter-btn active" data-filter="all" aria-pressed="true">All</button>
+        <button class="food-filter-btn" data-filter="veg" aria-pressed="false">🌱 Veg Only</button>
+        <button class="food-filter-btn" data-filter="popular" aria-pressed="false">🔥 Popular</button>
+      </div>
+
+      <!-- Category tabs -->
+      <div id="category-nav" class="category-nav" role="tablist" aria-label="Food categories">
+        <!-- Populated by OrderController.js -->
+      </div>
+
+      <!-- Menu items grid -->
+      <div id="food-items-grid" class="food-items-grid" role="list" aria-label="Menu items">
+        <!-- Populated by OrderController.js -->
+      </div>
+
+      <!-- Cart section -->
+      <p class="section-title">🛒 Your Cart</p>
+      <div class="cart-section glass-card">
+        <div id="cart-items" role="list" aria-label="Cart items">
+          <p class="cart-empty">🛒 Your cart is empty. Add items from the menu!</p>
+        </div>
+        <div class="cart-footer">
+          <span id="cart-summary" class="cart-summary" aria-live="polite"></span>
+          <button id="place-order-btn" class="btn-primary" style="width:auto;padding:10px 20px;" disabled aria-label="Place order for in-seat delivery">
+            Place Order 🛵
+          </button>
+        </div>
+      </div>
+
+      <!-- Active orders -->
+      <p class="section-title" style="margin-top:16px;">📦 Your Orders</p>
+      <div id="orders-list" role="list" aria-label="Your active orders" aria-live="polite">
+        <p style="font-size:13px;color:var(--text-muted);padding:12px 0;">No orders yet. Place your first order above!</p>
+      </div>
+
+    </section>
+
+    <!-- ── NAVIGATE TAB ── -->
+    <section id="tab-navigate" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-navigate" tabindex="0">
+
+      <p class="section-title">🧭 Get Directions</p>
+
+      <div class="nav-form glass-card" style="margin-bottom:20px;">
+        <label class="form-label" for="nav-destination">Where do you want to go?</label>
+        <select id="nav-destination" class="form-select" aria-label="Select navigation destination">
+          <option value="seating">🪑 My Seat</option>
+          <option value="restroom">🚻 Nearest Restroom</option>
+          <option value="food">🍔 Food Court</option>
+          <option value="exit">🚪 Exit Gate</option>
+        </select>
+
+        <div class="acc-toggle-row" style="margin-top:12px;margin-bottom:16px;">
+          <label class="acc-toggle-label" for="acc-route-toggle">
+            ♿ Accessible Route (No Stairs)
+          </label>
+          <label class="toggle" aria-label="Use accessible route without stairs">
+            <input type="checkbox" id="acc-route-toggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <button id="nav-go-btn" class="btn-primary" aria-label="Get crowd-aware directions">
+          🗺️ Get Directions
+        </button>
+      </div>
+
+      <!-- Direction steps (populated dynamically) -->
+      <div id="nav-steps" class="glass-card" role="region" aria-label="Navigation directions" aria-live="polite">
+        <p style="font-size:13px;color:var(--text-muted);">Select a destination and tap Get Directions.</p>
+      </div>
+
+    </section>
+
+  </main><!-- /main -->
+
+  <!-- SOS Emergency Button -->
+  <button class="sos-btn" id="sos-btn" aria-label="Emergency SOS — alert stadium staff immediately" title="Emergency SOS">
+    SOS
+  </button>
+
+</div><!-- /main-app -->
+
+<!-- Toast Notification Container -->
+<div id="toast-container" role="region" aria-label="System notifications" aria-live="assertive"></div>
+
+<!-- Settings panel toggle script (inline, minimal — no external dependencies) -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsPanel = document.getElementById('settings-panel');
+    const notifBell = document.getElementById('notif-bell');
+    const notifPanel = document.getElementById('notif-panel');
+
+    settingsBtn?.addEventListener('click', () => {
+      notifPanel?.classList.add('hidden');
+      settingsPanel?.classList.toggle('hidden');
+    });
+
+    notifBell?.addEventListener('click', () => {
+      settingsPanel?.classList.add('hidden');
+      notifPanel?.classList.toggle('hidden');
+    });
+
+    // SOS handler
+    document.getElementById('sos-btn')?.addEventListener('click', () => {
+      const toast = document.getElementById('toast-container');
+      if (toast) {
+        alert('🆘 SOS Triggered! Stadium staff have been alerted.\nMedical team stationed at VIP Pavilion Gate.\nPlease stay calm and wait for assistance.');
+      }
+    });
+
+    // Close panels on outside click
+    document.addEventListener('click', (e) => {
+      if (!settingsBtn?.contains(e.target) && !settingsPanel?.contains(e.target)) {
+        settingsPanel?.classList.add('hidden');
+      }
+      if (!notifBell?.contains(e.target) && !notifPanel?.contains(e.target)) {
+        notifPanel?.classList.add('hidden');
+      }
+    });
+  });
+</script>
+
+<!-- Main app module — loads ES module orchestrator -->
+<script type="module" src="src/main.js"></script>
+
+</body>
+</html>

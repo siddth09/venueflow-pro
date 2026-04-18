@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="VenueFlow Pro — Admin Command Center. Real-time stadium occupancy, crowd alerts, and staff management." />
+  <meta name="robots" content="noindex" />
+  <title>VenueFlow Pro — Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Admin-only overrides */
+    :root { --max-width: 900px; }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 16px;
+    }
+    @media (max-width: 640px) { .admin-grid { grid-template-columns: 1fr; } }
+
+    .admin-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+    .admin-card-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; padding: 16px; }
+    @media (max-width: 640px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      text-align: center;
+    }
+    .kpi-value { font-size: 28px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .kpi-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .kpi-card--blue   .kpi-value { color: var(--accent-blue); }
+    .kpi-card--green  .kpi-value { color: var(--accent-emerald); }
+    .kpi-card--amber  .kpi-value { color: var(--accent-amber); }
+    .kpi-card--red    .kpi-value { color: var(--accent-crimson); }
+
+    .section-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .section-bar-label { font-size: 12px; color: var(--text-secondary); width: 110px; flex-shrink: 0; }
+    .section-bar-track { flex: 1; height: 8px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; }
+    .section-bar-fill  { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+    .section-pct { font-size: 11px; font-weight: 700; min-width: 32px; text-align: right; }
+
+    .log-entry {
+      display: flex;
+      gap: 10px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 12px;
+    }
+    .log-time { color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .log-msg  { color: var(--text-secondary); }
+
+    .alert-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+    }
+    .alert-row.resolved { background: rgba(16,185,129,0.06); border-color: rgba(16,185,129,0.20); }
+    .alert-clear-btn {
+      padding: 4px 10px;
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.30);
+      border-radius: var(--radius-sm);
+      color: var(--accent-crimson);
+      font-family: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .alert-clear-btn:hover { background: rgba(239,68,68,0.25); }
+
+    .staff-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-glass);
+      margin-bottom: 6px;
+    }
+    .staff-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--accent-blue-dim);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .staff-name { font-size: 13px; font-weight: 600; }
+    .staff-role { font-size: 11px; color: var(--text-muted); }
+    .staff-zone { font-size: 11px; font-weight: 600; color: var(--accent-blue); margin-left: auto; }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block; margin-right: 4px;
+    }
+    .status-dot--active  { background: var(--accent-emerald); }
+    .status-dot--standby { background: var(--accent-amber); }
+    .admin-header {
+      height: var(--header-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: rgba(10,14,26,0.90);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-glass);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .live-indicator {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: var(--accent-emerald);
+    }
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent-emerald);
+      animation: sosPulse 1.2s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell" role="application" aria-label="VenueFlow Pro Admin Dashboard">
+
+  <!-- Admin Header -->
+  <header class="admin-header" role="banner">
+    <div class="header-left">
+      <span aria-hidden="true">🛡️</span>
+      <span class="header-title">VenueFlow Admin</span>
+    </div>
+    <div class="live-indicator" aria-live="polite" aria-label="System status: Live">
+      <span class="live-dot" aria-hidden="true"></span>
+      LIVE
+    </div>
+    <a href="index.html" style="font-size:12px;color:var(--text-secondary);text-decoration:none;">Fan View →</a>
+  </header>
+
+  <!-- KPI Cards -->
+  <section class="kpi-grid" aria-label="Key performance indicators" role="region">
+    <div class="kpi-card kpi-card--blue" role="status" aria-label="Total occupancy">
+      <div class="kpi-value" id="admin-occupancy">74%</div>
+      <div class="kpi-label">Occupancy</div>
+    </div>
+    <div class="kpi-card kpi-card--amber" role="status" aria-label="Average wait time">
+      <div class="kpi-value" id="admin-avg-wait">8m</div>
+      <div class="kpi-label">Avg Wait</div>
+    </div>
+    <div class="kpi-card kpi-card--red" role="status" aria-label="Active alerts">
+      <div class="kpi-value" id="admin-alerts">2</div>
+      <div class="kpi-label">Alerts</div>
+    </div>
+    <div class="kpi-card kpi-card--green" role="status" aria-label="Active staff">
+      <div class="kpi-value" id="admin-staff">3</div>
+      <div class="kpi-label">Staff Active</div>
+    </div>
+  </section>
+
+  <div class="admin-grid">
+
+    <!-- Section Occupancy -->
+    <div class="admin-card">
+      <div class="admin-card-title" role="heading" aria-level="2">📊 Section Occupancy</div>
+      <div id="admin-sections" role="list" aria-label="Section by section occupancy">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Active Alerts -->
+    <div class="admin-card">
+      <div class="admin-card-title" role="heading" aria-level="2">🚨 Active Alerts</div>
+      <div id="admin-alert-list" role="list" aria-label="Active crowd and safety alerts" aria-live="polite">
+        <div class="alert-row" role="listitem">
+          <span style="font-size:13px;">East Wing — 91% capacity critical</span>
+          <button class="alert-clear-btn" aria-label="Clear East Wing alert">Clear</button>
+        </div>
+        <div class="alert-row" role="listitem">
+          <span style="font-size:13px;">Restroom East L1 — 12 min queue</span>
+          <button class="alert-clear-btn" aria-label="Clear Restroom East alert">Clear</button>
+        </div>
+        <div class="alert-row resolved" role="listitem" aria-label="Resolved alert: Gate B cleared">
+          <span style="font-size:13px;color:var(--text-muted);">✅ Gate B queue — Resolved</span>
+          <span style="font-size:11px;color:var(--accent-emerald);">Resolved</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staff Positions -->
+    <div class="admin-card">
+      <div class="admin-card-title" role="heading" aria-level="2">👷 Staff Positions</div>
+      <div id="admin-staff-list" role="list" aria-label="Staff members and positions">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Live Event Log -->
+    <div class="admin-card" style="overflow:hidden;">
+      <div class="admin-card-title" role="heading" aria-level="2">📝 Live Event Log</div>
+      <div id="admin-log" role="log" aria-label="Live event activity log" aria-live="polite"
+           style="max-height:260px;overflow-y:auto;">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+  </div><!-- /admin-grid -->
+
+</div>
+
+<script>
+  // ── Admin Dashboard Script (self-contained, no module imports needed) ────────
+  const SECTIONS = [
+    { id: 'north',       label: 'North Stand',   density: 0.82 },
+    { id: 'south',       label: 'South Stand',   density: 0.65 },
+    { id: 'east',        label: 'East Wing',      density: 0.91 },
+    { id: 'west',        label: 'West Wing',      density: 0.55 },
+    { id: 'vip',         label: 'VIP Pavilion',  density: 0.40 },
+    { id: 'upper_north', label: 'Upper North',   density: 0.70 },
+    { id: 'upper_south', label: 'Upper South',   density: 0.60 },
+  ];
+
+  const STAFF = [
+    { name: 'Raj Kumar',   role: 'Gate Marshal',    zone: 'North', status: 'active', icon: '🧑' },
+    { name: 'Priya Singh', role: 'Concession Lead', zone: 'East',  status: 'active', icon: '👩' },
+    { name: 'Amit Sharma', role: 'Medical',         zone: 'VIP',   status: 'standby',icon: '🧑‍⚕️' },
+    { name: 'Neha Rao',    role: 'Security',        zone: 'South', status: 'active', icon: '👮' },
+  ];
+
+  const LOG_EVENTS = [
+    { time: '18:52', msg: 'AI Chat: 47 queries in last 10 min' },
+    { time: '18:48', msg: 'East Wing density exceeded 90%' },
+    { time: '18:44', msg: 'FCM notification sent: halftime warning ×12,400' },
+    { time: '18:40', msg: 'Restroom East L1 wait exceeded 10 min threshold' },
+    { time: '18:35', msg: 'Gate B queue cleared — staff reallocated' },
+    { time: '18:30', msg: 'Vertex AI crowd prediction: halftime surge +180%' },
+    { time: '18:22', msg: 'Food Court North: order volume +35%' },
+    { time: '18:15', msg: 'Stadium gates opened — occupancy tracking started' },
+  ];
+
+  function getDensityColor(d) {
+    if (d < 0.50) return '#10B981';
+    if (d < 0.75) return '#F59E0B';
+    if (d < 0.90) return '#EF4444';
+    return '#7C0000';
+  }
+
+  function renderSections(sections) {
+    const container = document.getElementById('admin-sections');
+    if (!container) return;
+    container.innerHTML = '';
+    sections.forEach(sec => {
+      const pct = Math.round(sec.density * 100);
+      const color = getDensityColor(sec.density);
+
+      const row = document.createElement('div');
+      row.className = 'section-bar-row';
+      row.setAttribute('role', 'listitem');
+      row.setAttribute('aria-label', `${sec.label}: ${pct}% occupied`);
+
+      const label = document.createElement('span');
+      label.className = 'section-bar-label';
+      label.textContent = sec.label;
+
+      const track = document.createElement('div');
+      track.className = 'section-bar-track';
+
+      const fill = document.createElement('div');
+      fill.className = 'section-bar-fill';
+      fill.style.width = `${pct}%`;
+      fill.style.background = color;
+      fill.setAttribute('role', 'progressbar');
+      fill.setAttribute('aria-valuenow', String(pct));
+      fill.setAttribute('aria-valuemin', '0');
+      fill.setAttribute('aria-valuemax', '100');
+      track.appendChild(fill);
+
+      const pctEl = document.createElement('span');
+      pctEl.className = 'section-pct';
+      pctEl.style.color = color;
+      pctEl.textContent = `${pct}%`;
+
+      row.appendChild(label);
+      row.appendChild(track);
+      row.appendChild(pctEl);
+      container.appendChild(row);
+    });
+  }
+
+  function renderStaff(staffList) {
+    const container = document.getElementById('admin-staff-list');
+    if (!container) return;
+    container.innerHTML = '';
+    staffList.forEach(s => {
+      const card = document.createElement('div');
+      card.className = 'staff-card';
+      card.setAttribute('role', 'listitem');
+      card.setAttribute('aria-label', `${s.name}, ${s.role}, ${s.zone} zone, ${s.status}`);
+
+      const avatar = document.createElement('div');
+      avatar.className = 'staff-avatar';
+      avatar.setAttribute('aria-hidden', 'true');
+      avatar.textContent = s.icon;
+
+      const info = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'staff-name';
+      name.textContent = s.name;
+      const role = document.createElement('div');
+      role.className = 'staff-role';
+      const dot = document.createElement('span');
+      dot.className = `status-dot status-dot--${s.status}`;
+      dot.setAttribute('aria-hidden', 'true');
+      role.appendChild(dot);
+      role.appendChild(document.createTextNode(s.role));
+      info.appendChild(name);
+      info.appendChild(role);
+
+      const zone = document.createElement('span');
+      zone.className = 'staff-zone';
+      zone.textContent = s.zone;
+
+      card.appendChild(avatar);
+      card.appendChild(info);
+      card.appendChild(zone);
+      container.appendChild(card);
+    });
+  }
+
+  function renderLog(events) {
+    const container = document.getElementById('admin-log');
+    if (!container) return;
+    container.innerHTML = '';
+    events.forEach(e => {
+      const row = document.createElement('div');
+      row.className = 'log-entry';
+
+      const time = document.createElement('span');
+      time.className = 'log-time';
+      time.textContent = e.time;
+
+      const msg = document.createElement('span');
+      msg.className = 'log-msg';
+      msg.textContent = e.msg;
+
+      row.appendChild(time);
+      row.appendChild(msg);
+      container.appendChild(row);
+    });
+  }
+
+  function simulateTick(sections) {
+    return sections.map(sec => ({
+      ...sec,
+      density: Math.min(0.99, Math.max(0.1, sec.density + (Math.random() - 0.5) * 0.04)),
+    }));
+  }
+
+  function updateKPIs(sections) {
+    const avgDensity = sections.reduce((s, sec) => s + sec.density, 0) / sections.length;
+    const occ = Math.round(avgDensity * 100);
+
+    const occEl = document.getElementById('admin-occupancy');
+    if (occEl) occEl.textContent = `${occ}%`;
+
+    const avgWait = Math.round(6 + avgDensity * 10);
+    const waitEl = document.getElementById('admin-avg-wait');
+    if (waitEl) waitEl.textContent = `${avgWait}m`;
+
+    const alertCount = sections.filter(s => s.density > 0.85).length;
+    const alertEl = document.getElementById('admin-alerts');
+    if (alertEl) alertEl.textContent = String(alertCount);
+  }
+
+  // Alert clear buttons
+  document.querySelectorAll('.alert-clear-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const row = btn.closest('.alert-row');
+      if (row) { row.classList.add('resolved'); btn.remove(); }
+    });
+  });
+
+  // Initial render
+  let currentSections = SECTIONS.map(s => ({ ...s }));
+  renderSections(currentSections);
+  renderStaff(STAFF);
+  renderLog(LOG_EVENTS);
+  updateKPIs(currentSections);
+
+  // Live simulation
+  setInterval(() => {
+    currentSections = simulateTick(currentSections);
+    renderSections(currentSections);
+    updateKPIs(currentSections);
+
+    // Add a live log entry occasionally
+    if (Math.random() < 0.3) {
+      const msgs = [
+        'FCM notification sent: crowd update',
+        'Vertex AI prediction refreshed',
+        'User query processed by Gemini AI',
+        'Firebase sync: venue status updated',
+      ];
+      const now = new Date();
+      const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const msg = msgs[Math.floor(Math.random() * msgs.length)];
+      LOG_EVENTS.unshift({ time, msg });
+      renderLog(LOG_EVENTS.slice(0, 10));
+    }
+  }, 5000);
+</script>
+
+</body>
+</html>
