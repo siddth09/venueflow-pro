@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "node app.js",
+    "build": "postcss style.css -r && npm test",
     "test": "jest --coverage --coverageDirectory=coverage",
     "test:watch": "jest --watch",
     "lint": "eslint src/ tests/ app.js --ext .js",
@@ -20,13 +21,19 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
+    "autoprefixer": "^10.5.0",
     "eslint": "^8.57.0",
     "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0"
+    "jest-environment-jsdom": "^29.7.0",
+    "postcss": "^8.5.10",
+    "postcss-cli": "^11.0.1",
+    "postcss-preset-env": "^11.2.1"
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/tests/**/*.test.js"],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
     "collectCoverageFrom": [
       "src/engine/simulator.cjs",
       "app.js"
@@ -41,8 +48,16 @@
     }
   },
   "keywords": [
-    "stadium", "ai", "assistant", "gemini", "google-cloud", "crowd-management",
-    "firebase", "venue", "smart-stadium", "real-time"
+    "stadium",
+    "ai",
+    "assistant",
+    "gemini",
+    "google-cloud",
+    "crowd-management",
+    "firebase",
+    "venue",
+    "smart-stadium",
+    "real-time"
   ],
   "license": "MIT",
   "repository": {
