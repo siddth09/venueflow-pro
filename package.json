@@ -4,9 +4,8 @@
   "description": "AI-powered stadium companion — real-time crowd navigation, smart recommendations, and in-seat food ordering.",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
     "dev": "node app.js",
-    "build": "postcss style.css -r && npm test",
+    "build": "postcss style.css -r && node build.js && npm test",
     "test": "jest --coverage --coverageDirectory=coverage",
     "test:watch": "jest --watch",
     "lint": "eslint src/ tests/ app.js --ext .js",
