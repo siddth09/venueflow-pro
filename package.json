@@ -2,7 +2,6 @@
   "name": "venueflow-pro",
   "version": "1.0.0",
   "description": "AI-powered stadium companion — real-time crowd navigation, smart recommendations, and in-seat food ordering.",
-  "main": "app.js",
   "scripts": {
     "build": "postcss style.css -r && node build.js && npm test",
     "test": "jest --coverage --coverageDirectory=coverage",
