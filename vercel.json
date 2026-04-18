@@ -1,12 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/venue", "destination": "/api/venue" },
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/(.*\\.js)", "destination": "/$1" },
-    { "source": "/(.*\\.css)", "destination": "/$1" },
-    { "source": "/(.*\\.json)", "destination": "/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/admin", "destination": "/admin.html" }
   ],
   "headers": [
     {
